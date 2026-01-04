@@ -24,14 +24,14 @@
 - [x] Add query timing to all API responses
 
 ### 1.3 TanStack DB Collections
-- [ ] Create `assetsCollection` with Electric shape sync
-- [ ] Create `superinvestorsCollection` with Electric shape sync
-- [ ] Create `searchesCollection` with Electric shape sync
-- [ ] Create `activitySummaryCollection` with Electric shape sync
-- [ ] Create `cikQuarterlyCollection` with parameterized Electric shape
-- [ ] Create `investorFlowCollection` with parameterized Electric shape
-- [ ] Implement collection preloading on app initialization
-- [ ] Add collection status indicators (loading, synced, error)
+- [x] Create `assetsCollection` with Electric shape sync
+- [x] Create `superinvestorsCollection` with Electric shape sync
+- [x] Create `searchesCollection` with Electric shape sync
+- [x] Create `activitySummaryCollection` with Electric shape sync
+- [x] Create `cikQuarterlyCollection` with parameterized Electric shape
+- [x] Create `investorFlowCollection` with parameterized Electric shape
+- [x] Implement collection preloading on app initialization
+- [x] Add collection status indicators (loading, synced, error)
 
 ## Phase 2: UI Components Foundation
 
@@ -48,23 +48,23 @@
 - [x] Add Table components (Table, TableHeader, TableBody, TableRow, TableHead, TableCell)
 
 ### 2.2 Core Layout Components
-- [ ] Create `SiteLayout` component with header and main content area
-- [ ] Create `GlobalNav` component with logo, search slot, and navigation links
-- [ ] Add navigation link highlighting for current route
-- [ ] Make layout responsive (mobile hamburger menu)
-- [ ] Add theme support (light/dark mode toggle)
+- [x] Create `SiteLayout` component with header and main content area
+- [x] Create `GlobalNav` component with logo, search slot, and navigation links
+- [x] Add navigation link highlighting for current route
+- [x] Make layout responsive (mobile hamburger menu)
+- [x] Add theme support (light/dark mode toggle)
 
 ### 2.3 DataTable Component
-- [ ] Create generic `DataTable<T>` component with TypeScript generics
-- [ ] Implement column definition system with sortable/searchable flags
-- [ ] Add client-side search filtering
-- [ ] Add column header click sorting (asc/desc/none cycle)
-- [ ] Implement pagination with First/Prev/Next/Last buttons
-- [ ] Add page size selector (10, 25, 50, 100)
-- [ ] Implement keyboard navigation (arrow keys, Enter to click)
-- [ ] Add focus states and accessibility attributes
-- [ ] Add loading skeleton state
-- [ ] Add empty state message
+- [x] Create generic `DataTable<T>` component with TypeScript generics
+- [x] Implement column definition system with sortable/searchable flags
+- [x] Add client-side search filtering
+- [x] Add column header click sorting (asc/desc/none cycle)
+- [x] Implement pagination with First/Prev/Next/Last buttons
+- [x] Add page size selector (10, 25, 50, 100)
+- [x] Implement keyboard navigation (arrow keys, Enter to click)
+- [x] Add focus states and accessibility attributes
+- [x] Add loading skeleton state
+- [x] Add empty state message
 
 ### 2.4 Global Search Component
 - [ ] Create `GlobalSearch` component using Command palette
@@ -77,10 +77,10 @@
 - [ ] Add "No results" state
 
 ### 2.5 Utility Components
-- [ ] Create `LatencyBadge` component showing query timing
-- [ ] Create `LoadingSpinner` component
-- [ ] Create `ErrorCard` component for error states
-- [ ] Create `EmptyState` component for no-data states
+- [x] Create `LatencyBadge` component showing query timing
+- [x] Create `LoadingSpinner` component
+- [x] Create `ErrorCard` component for error states
+- [x] Create `EmptyState` component for no-data states
 
 ## Phase 3: Chart Components
 
