@@ -7,5 +7,11 @@ export default defineConfig({
   plugins: [TanStackRouterVite(), react(), tsconfigPaths()],
   server: {
     port: 5174,
+    proxy: {
+      "/api": {
+        target: "http://localhost:3001",
+        changeOrigin: true,
+      },
+    },
   },
 });
