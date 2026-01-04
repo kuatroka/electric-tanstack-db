@@ -3,7 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DataTable, type ColumnDef } from "@/components/DataTable";
 import { LatencyBadge, type DataFlow } from "@/components/LatencyBadge";
 import { useContentReady } from "@/hooks/useContentReady";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
+import { useSearch as useElectricSearch } from "@/hooks/useSearch";
 
 interface Asset {
   id: number;
@@ -22,7 +23,15 @@ function AssetsPage() {
   const [total, setTotal] = useState(0);
   const [latencyMs, setLatencyMs] = useState<number>();
   const [dataFlow, setDataFlow] = useState<DataFlow>("rq-api");
+  const [searchQuery, setSearchQuery] = useState("");
   const { onReady } = useContentReady();
+
+  // Use Electric SQL for searching when query >= 2 chars
+  const {
+    results: electricResults,
+    latencyMs: electricLatencyMs,
+    dataFlow: electricDataFlow,
+  } = useElectricSearch(searchQuery);
 
   useEffect(() => {
     async function fetchAssets() {
@@ -46,6 +55,28 @@ function AssetsPage() {
     }
     fetchAssets();
   }, [onReady]);
+
+  // When searching, use Electric SQL results (searches all assets)
+  // When not searching, use the loaded assets for browsing
+  const displayData = useMemo(() => {
+    if (searchQuery.length >= 2) {
+      // Filter to only assets (category === "assets")
+      return electricResults
+        .filter((r) => r.category === "assets")
+        .map((r) => ({
+          id: r.id,
+          code: r.code,
+          name: r.name,
+          cusip: r.cusip,
+        }));
+    }
+    return assets;
+  }, [searchQuery, electricResults, assets]);
+
+  const displayLatency =
+    searchQuery.length >= 2 ? electricLatencyMs : latencyMs;
+  const displayDataFlow: DataFlow =
+    searchQuery.length >= 2 ? electricDataFlow : dataFlow;
 
   const columns: ColumnDef<Asset>[] = [
     {
@@ -107,14 +138,17 @@ function AssetsPage() {
             </div>
           ) : (
             <DataTable
-              data={assets}
+              data={displayData}
               columns={columns}
               searchPlaceholder="Filter by ticker, name, or CUSIP..."
               defaultPageSize={20}
               defaultSortColumn="code"
+              searchValue={searchQuery}
+              onSearchChange={setSearchQuery}
+              searchDisabled={searchQuery.length >= 2}
               latencyBadge={
-                latencyMs !== undefined ? (
-                  <LatencyBadge latencyMs={latencyMs} source={dataFlow} />
+                displayLatency !== undefined ? (
+                  <LatencyBadge latencyMs={displayLatency} source={displayDataFlow} />
                 ) : undefined
               }
             />

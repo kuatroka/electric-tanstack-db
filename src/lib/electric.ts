@@ -1,6 +1,11 @@
 import { ShapeStream, Shape } from "@electric-sql/client";
 
-const ELECTRIC_URL = import.meta.env.VITE_ELECTRIC_URL || "http://localhost:30000";
+// Use Vite proxy to bypass CORS issues with Electric SQL
+// For relative paths, construct absolute URL using window.location.origin
+const envUrl = import.meta.env.VITE_ELECTRIC_URL || "/electric";
+const ELECTRIC_URL = envUrl.startsWith("/")
+  ? `${window.location.origin}${envUrl}`
+  : envUrl;
 
 export interface ShapeConfig {
   table: string;
@@ -10,19 +15,22 @@ export interface ShapeConfig {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function createShapeStream<T extends Record<string, any>>(config: ShapeConfig): ShapeStream<T> {
-  const url = new URL(`/v1/shape`, ELECTRIC_URL);
-  url.searchParams.set("table", config.table);
-
+  // Build URL - append /v1/shape to ELECTRIC_URL base path
+  const params = new URLSearchParams();
+  params.set("table", config.table);
   if (config.where) {
-    url.searchParams.set("where", config.where);
+    params.set("where", config.where);
+  }
+  if (config.columns) {
+    params.set("columns", config.columns.join(","));
   }
 
-  if (config.columns) {
-    url.searchParams.set("columns", config.columns.join(","));
-  }
+  // Ensure no double slashes
+  const basePath = ELECTRIC_URL.endsWith("/") ? ELECTRIC_URL.slice(0, -1) : ELECTRIC_URL;
+  const urlString = `${basePath}/v1/shape?${params.toString()}`;
 
   return new ShapeStream<T>({
-    url: url.toString(),
+    url: urlString,
   });
 }
 

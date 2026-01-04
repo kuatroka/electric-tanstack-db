@@ -4,7 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import { DataTable, type ColumnDef } from "@/components/DataTable";
 import { LatencyBadge, type DataFlow } from "@/components/LatencyBadge";
 import { useContentReady } from "@/hooks/useContentReady";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
+import { useSearch as useElectricSearch } from "@/hooks/useSearch";
 
 interface Superinvestor {
   id: number;
@@ -24,7 +25,15 @@ function SuperinvestorsPage() {
   const [total, setTotal] = useState(0);
   const [latencyMs, setLatencyMs] = useState<number>();
   const [dataFlow, setDataFlow] = useState<DataFlow>("rq-api");
+  const [searchQuery, setSearchQuery] = useState("");
   const { onReady } = useContentReady();
+
+  // Use Electric SQL for searching when query >= 2 chars
+  const {
+    results: electricResults,
+    latencyMs: electricLatencyMs,
+    dataFlow: electricDataFlow,
+  } = useElectricSearch(searchQuery);
 
   useEffect(() => {
     async function fetchInvestors() {
@@ -48,6 +57,29 @@ function SuperinvestorsPage() {
     }
     fetchInvestors();
   }, [onReady]);
+
+  // When searching, use Electric SQL results (searches all superinvestors)
+  // When not searching, use the loaded data for browsing
+  const displayData = useMemo(() => {
+    if (searchQuery.length >= 2) {
+      // Filter to only superinvestors (category === "superinvestors")
+      return electricResults
+        .filter((r) => r.category === "superinvestors")
+        .map((r) => ({
+          id: r.id,
+          cik: r.code,
+          name: r.name,
+          ticker: null,
+          activePeriods: null,
+        }));
+    }
+    return investors;
+  }, [searchQuery, electricResults, investors]);
+
+  const displayLatency =
+    searchQuery.length >= 2 ? electricLatencyMs : latencyMs;
+  const displayDataFlow: DataFlow =
+    searchQuery.length >= 2 ? electricDataFlow : dataFlow;
 
   const columns: ColumnDef<Superinvestor>[] = [
     {
@@ -123,14 +155,17 @@ function SuperinvestorsPage() {
             </div>
           ) : (
             <DataTable
-              data={investors}
+              data={displayData}
               columns={columns}
               searchPlaceholder="Filter by name or CIK..."
               defaultPageSize={20}
               defaultSortColumn="name"
+              searchValue={searchQuery}
+              onSearchChange={setSearchQuery}
+              searchDisabled={searchQuery.length >= 2}
               latencyBadge={
-                latencyMs !== undefined ? (
-                  <LatencyBadge latencyMs={latencyMs} source={dataFlow} />
+                displayLatency !== undefined ? (
+                  <LatencyBadge latencyMs={displayLatency} source={displayDataFlow} />
                 ) : undefined
               }
             />

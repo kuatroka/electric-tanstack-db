@@ -12,6 +12,11 @@ export default defineConfig({
         target: "http://localhost:3001",
         changeOrigin: true,
       },
+      "/electric": {
+        target: "http://localhost:30000",
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/electric/, ""),
+      },
     },
   },
 });

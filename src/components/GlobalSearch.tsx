@@ -59,7 +59,7 @@ export function GlobalSearch() {
   };
 
   return (
-    <div className="relative w-full sm:w-auto">
+    <div className="relative w-full sm:w-[30rem]">
       <div className="relative">
         <Input
           ref={inputRef}
