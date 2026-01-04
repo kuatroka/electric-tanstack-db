@@ -4,6 +4,7 @@ services:
     container_name: electric-tanstack-db
     environment:
       DATABASE_URL: "postgresql://user:password@host.docker.internal:5432/postgres"
+      ELECTRIC_INSECURE: "true"
     ports:
       - "30000:3000"
     extra_hosts:

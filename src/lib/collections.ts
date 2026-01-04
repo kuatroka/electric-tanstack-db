@@ -1,5 +1,8 @@
-import { createCollection } from "@tanstack/db-collections";
-import { shapes } from "./electric";
+import { createCollection } from "@tanstack/db";
+import { electricCollectionOptions } from "@tanstack/db-collections";
+
+const ELECTRIC_URL = import.meta.env.VITE_ELECTRIC_URL || "http://localhost:30000";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
 // Project type for TanStack DB
 export interface Project {
@@ -9,6 +12,7 @@ export interface Project {
   owner_id: string;
   shared_user_ids: string[] | null;
   created_at: string;
+  [key: string]: unknown;
 }
 
 // Todo type for TanStack DB
@@ -20,51 +24,114 @@ export interface Todo {
   project_id: string;
   user_ids: string[] | null;
   created_at: string;
+  [key: string]: unknown;
 }
 
 // Projects collection with Electric sync
-export const projectsCollection = createCollection<Project>({
+const { collectionOptions: projectOptions } = electricCollectionOptions<Project>({
   id: "projects",
-  primaryKey: "id",
-  sync: {
-    // Electric shape subscription for real-time sync
-    subscribe: (onData) => {
-      const shape = shapes.projects();
-      shape.subscribe(({ rows }) => {
-        onData(rows as Project[]);
-      });
-      return () => shape.unsubscribe();
-    },
+  shapeOptions: {
+    url: `${ELECTRIC_URL}/v1/shape?table=projects`,
   },
+  getId: (p) => p.id,
 });
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const projectsCollection = createCollection<Project>({
+  ...projectOptions,
+  onInsert: async ({ transaction }: any) => {
+    const item = transaction.mutations[0].modified as Project;
+    await fetch(`${API_URL}/api/projects`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(item),
+    });
+  },
+  onUpdate: async ({ transaction }: any) => {
+    const { original, changes } = transaction.mutations[0];
+    await fetch(`${API_URL}/api/projects/${original.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(changes),
+    });
+  },
+  onDelete: async ({ transaction }: any) => {
+    const item = transaction.mutations[0].original as Project;
+    await fetch(`${API_URL}/api/projects/${item.id}`, {
+      method: "DELETE",
+    });
+  },
+} as any);
 
 // Todos collection with Electric sync
-export const todosCollection = createCollection<Todo>({
+const { collectionOptions: todoOptions } = electricCollectionOptions<Todo>({
   id: "todos",
-  primaryKey: "id",
-  sync: {
-    subscribe: (onData) => {
-      const shape = shapes.todos();
-      shape.subscribe(({ rows }) => {
-        onData(rows as Todo[]);
-      });
-      return () => shape.unsubscribe();
-    },
+  shapeOptions: {
+    url: `${ELECTRIC_URL}/v1/shape?table=todos`,
   },
+  getId: (t) => t.id,
 });
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const todosCollection = createCollection<Todo>({
+  ...todoOptions,
+  onInsert: async ({ transaction }: any) => {
+    const item = transaction.mutations[0].modified as Todo;
+    await fetch(`${API_URL}/api/todos`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(item),
+    });
+  },
+  onUpdate: async ({ transaction }: any) => {
+    const { original, changes } = transaction.mutations[0];
+    await fetch(`${API_URL}/api/todos/${original.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(changes),
+    });
+  },
+  onDelete: async ({ transaction }: any) => {
+    const item = transaction.mutations[0].original as Todo;
+    await fetch(`${API_URL}/api/todos/${item.id}`, {
+      method: "DELETE",
+    });
+  },
+} as any);
+
 // Factory for project-scoped todos collection
-export const createProjectTodosCollection = (projectId: string) =>
-  createCollection<Todo>({
+export const createProjectTodosCollection = (projectId: string) => {
+  const { collectionOptions } = electricCollectionOptions<Todo>({
     id: `todos-${projectId}`,
-    primaryKey: "id",
-    sync: {
-      subscribe: (onData) => {
-        const shape = shapes.todos(projectId);
-        shape.subscribe(({ rows }) => {
-          onData(rows as Todo[]);
-        });
-        return () => shape.unsubscribe();
-      },
+    shapeOptions: {
+      url: `${ELECTRIC_URL}/v1/shape?table=todos&where=project_id='${projectId}'`,
     },
+    getId: (t) => t.id,
   });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return createCollection<Todo>({
+    ...collectionOptions,
+    onInsert: async ({ transaction }: any) => {
+      const item = transaction.mutations[0].modified as Todo;
+      await fetch(`${API_URL}/api/todos`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(item),
+      });
+    },
+    onUpdate: async ({ transaction }: any) => {
+      const { original, changes } = transaction.mutations[0];
+      await fetch(`${API_URL}/api/todos/${original.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(changes),
+      });
+    },
+    onDelete: async ({ transaction }: any) => {
+      const item = transaction.mutations[0].original as Todo;
+      await fetch(`${API_URL}/api/todos/${item.id}`, {
+        method: "DELETE",
+      });
+    },
+  } as any);
+};

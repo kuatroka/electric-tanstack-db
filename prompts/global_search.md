@@ -1,0 +1,2 @@
+create a global search feature and put it in the global sticky menu. Use shadcn/ui.
+the base table for search should be 'searched' from postgres, but use electric / pgline to make the search instantaneous.

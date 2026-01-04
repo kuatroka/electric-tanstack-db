@@ -32,15 +32,6 @@ export function createShape<T extends Record<string, any>>(config: ShapeConfig):
   return new Shape<T>(stream);
 }
 
-// Search result type from searches table
-export interface SearchResult {
-  id: number;
-  code: string;
-  name: string | null;
-  category: string;
-  cusip: string | null;
-}
-
 // Pre-configured shapes for common use cases
 export const shapes = {
   projects: () =>
@@ -69,7 +60,13 @@ export const shapes = {
 
   // Searches shape - syncs entire searches table for instant offline-capable search
   searches: () =>
-    createShape<SearchResult>({
+    createShape<{
+      id: number;
+      code: string;
+      name: string | null;
+      category: string;
+      cusip: string | null;
+    }>({
       table: "searches",
     }),
 };

@@ -1,5 +1,13 @@
 import { useState, useEffect, useRef } from "react";
-import { SearchResult, shapes } from "../lib/electric";
+import { shapes } from "../lib/electric";
+
+export type SearchResult = {
+  id: number;
+  code: string;
+  name: string | null;
+  category: string;
+  cusip: string | null;
+};
 
 export interface UseSearchResult {
   results: SearchResult[];

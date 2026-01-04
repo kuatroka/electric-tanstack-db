@@ -1,4 +1,8 @@
-localhost:5173 {
+{
+	auto_https off
+}
+
+http://localhost:5173 {
 	# Enable HTTP/2 for optimal Electric sync performance
 	reverse_proxy localhost:5174
 

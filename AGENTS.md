@@ -79,3 +79,7 @@ When all Beads issues for a change are closed:
 - NEVER stop before pushing - that leaves work stranded locally
 - NEVER say "ready to push when you are" - YOU must push
 - If push fails, resolve and retry until it succeeds
+
+
+## Mandatory Frontend Testing
+When you finish working on a bug, feature, setup, any code edit, before declaring that all is working perfectly, use **claude in chrome** or **crhrome dev tools mcp** and check the console log for any errors while testing every UI element on every route that might be affected by what you have been working on. Examples: test searchbox work whith actual typing a sample search term and get correct results, all charts populated, every UI interractivity feature works (hover, linked charts, tooltip), test table pagination, links work and take you where they should. After checking console log, check server logs and fix every error if exists. Fix any error until no errors exist. Only then declare a task successfully complete.

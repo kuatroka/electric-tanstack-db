@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useSearch } from "../hooks/useSearch";
-import { SearchResult } from "../lib/electric";
+import { useSearch, type SearchResult } from "../hooks/useSearch";
 
 export function GlobalSearch() {
   const navigate = useNavigate();

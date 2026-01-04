@@ -13,13 +13,13 @@ export function TodoList({ projectId }: TodoListProps) {
   useEffect(() => {
     const shape = shapes.todos(projectId);
 
-    shape.subscribe(({ rows }) => {
+    const unsubscribe = shape.subscribe(({ rows }) => {
       setTodos(rows as Todo[]);
       setLoading(false);
     });
 
     return () => {
-      shape.unsubscribe();
+      unsubscribe();
     };
   }, [projectId]);
 

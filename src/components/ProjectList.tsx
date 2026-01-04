@@ -5,18 +5,18 @@ import type { Project } from "../lib/collections";
 export function ProjectList() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error] = useState<string | null>(null);
 
   useEffect(() => {
     const shape = shapes.projects();
 
-    shape.subscribe(({ rows }) => {
+    const unsubscribe = shape.subscribe(({ rows }) => {
       setProjects(rows as Project[]);
       setLoading(false);
     });
 
     return () => {
-      shape.unsubscribe();
+      unsubscribe();
     };
   }, []);
 
