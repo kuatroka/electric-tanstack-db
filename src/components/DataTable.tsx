@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
@@ -16,6 +16,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Skeleton } from '@/components/ui/skeleton';
 import { ChevronUp, ChevronDown, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight } from 'lucide-react';
 
 export interface ColumnDef<T> {
@@ -24,6 +25,7 @@ export interface ColumnDef<T> {
   sortable?: boolean;
   searchable?: boolean;
   clickable?: boolean;
+  width?: string;
   render?: (value: T[keyof T], row: T, isFocused?: boolean) => React.ReactNode;
 }
 
@@ -31,6 +33,7 @@ interface DataTableProps<T> {
   data: T[];
   columns: ColumnDef<T>[];
   searchPlaceholder?: string;
+  searchable?: boolean;
   defaultPageSize?: number;
   defaultSortColumn?: keyof T;
   defaultSortDirection?: 'asc' | 'desc';
@@ -41,13 +44,19 @@ interface DataTableProps<T> {
   searchDisabled?: boolean;
   searchValue?: string;
   latencyBadge?: React.ReactNode;
+  loading?: boolean;
+  loadingRows?: number;
+  emptyMessage?: string;
+  onRowClick?: (row: T) => void;
+  getRowId?: (row: T) => string | number;
 }
 
 export function DataTable<T extends { id: number | string }>({
   data,
   columns,
   searchPlaceholder = 'Search...',
-  defaultPageSize = 20,
+  searchable = true,
+  defaultPageSize = 25,
   defaultSortColumn,
   defaultSortDirection = 'asc',
   initialPage,
@@ -57,6 +66,11 @@ export function DataTable<T extends { id: number | string }>({
   searchDisabled = false,
   searchValue,
   latencyBadge,
+  loading = false,
+  loadingRows = 5,
+  emptyMessage = 'No data found',
+  onRowClick,
+  getRowId,
 }: DataTableProps<T>) {
   const [searchQuery, setSearchQuery] = useState(searchValue ?? '');
   const [sortColumn, setSortColumn] = useState<keyof T | null>(defaultSortColumn ?? null);
@@ -178,20 +192,45 @@ export function DataTable<T extends { id: number | string }>({
     onPageChange?.(newPage);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (paginatedData.length === 0) return;
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (loading || paginatedData.length === 0) return;
 
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault();
-        setFocusedRowIndex(prev => Math.min(prev + 1, paginatedData.length - 1));
+        setFocusedRowIndex(prev => {
+          const next = prev < 0 ? 0 : Math.min(prev + 1, paginatedData.length - 1);
+          return next;
+        });
         break;
       case 'ArrowUp':
         e.preventDefault();
         setFocusedRowIndex(prev => Math.max(0, prev - 1));
         break;
+      case 'Home':
+        if (e.ctrlKey) {
+          e.preventDefault();
+          setFocusedRowIndex(0);
+        }
+        break;
+      case 'End':
+        if (e.ctrlKey) {
+          e.preventDefault();
+          setFocusedRowIndex(paginatedData.length - 1);
+        }
+        break;
       case 'Enter':
+      case ' ':
         if (focusedRowIndex >= 0 && focusedRowIndex < paginatedData.length) {
+          e.preventDefault();
+          const row = paginatedData[focusedRowIndex];
+
+          // Trigger onRowClick if provided
+          if (onRowClick) {
+            onRowClick(row);
+          }
+
+          // Also try to click any clickable column link
           const clickableColumn = columns.find(col => col.clickable);
           if (clickableColumn && clickableColumn.render) {
             const cell = tableBodyRef.current?.querySelectorAll('tr')[focusedRowIndex]
@@ -204,7 +243,20 @@ export function DataTable<T extends { id: number | string }>({
         }
         break;
     }
-  };
+  }, [loading, paginatedData, focusedRowIndex, onRowClick, columns]);
+
+  const handleRowClick = useCallback((row: T) => {
+    if (onRowClick) {
+      onRowClick(row);
+    }
+  }, [onRowClick]);
+
+  const getRowKey = useCallback((row: T): string | number => {
+    if (getRowId) {
+      return getRowId(row);
+    }
+    return row.id;
+  }, [getRowId]);
 
   useEffect(() => {
     if (focusedRowIndex >= 0 && tableBodyRef.current) {
@@ -216,40 +268,86 @@ export function DataTable<T extends { id: number | string }>({
     }
   }, [focusedRowIndex]);
 
-  return (
-    <div className="space-y-4" onKeyDown={handleKeyDown}>
-      <div className="flex items-center gap-4">
-        <div className="w-full sm:w-96">
-          <Input
-            type="search"
-            placeholder={searchPlaceholder}
-            value={searchQuery}
-            onChange={(e) => handleSearch(e.target.value)}
-            className="w-full"
-          />
-        </div>
-        {latencyBadge}
-      </div>
+  // Generate unique table ID for ARIA
+  const tableId = useMemo(() => `datatable-${Math.random().toString(36).substr(2, 9)}`, []);
 
+  // Render loading skeleton rows
+  const renderSkeletonRows = () => {
+    return Array.from({ length: loadingRows }).map((_, rowIndex) => (
+      <TableRow key={`skeleton-${rowIndex}`} aria-hidden="true">
+        {columns.map((col, colIndex) => (
+          <TableCell
+            key={`skeleton-${rowIndex}-${colIndex}`}
+            style={col.width ? { width: col.width } : undefined}
+          >
+            <Skeleton className="h-4 w-full" />
+          </TableCell>
+        ))}
+      </TableRow>
+    ));
+  };
+
+  // Determine if search should be shown
+  const showSearch = searchable && !searchDisabled;
+
+  return (
+    <div
+      className="space-y-4"
+      onKeyDown={handleKeyDown}
+      role="region"
+      aria-label="Data table"
+    >
+      {/* Search input */}
+      {showSearch && (
+        <div className="flex items-center gap-4">
+          <div className="w-full sm:w-96">
+            <Input
+              type="search"
+              placeholder={searchPlaceholder}
+              value={searchQuery}
+              onChange={(e) => handleSearch(e.target.value)}
+              className="w-full"
+              aria-label="Search table"
+              aria-controls={tableId}
+              disabled={loading}
+            />
+          </div>
+          {latencyBadge}
+        </div>
+      )}
+
+      {/* Table */}
       <div className="border border-border rounded-lg overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
               {columns.map(column => (
-                <TableHead key={String(column.key)}>
+                <TableHead
+                  key={String(column.key)}
+                  style={column.width ? { width: column.width } : undefined}
+                  aria-sort={
+                    sortColumn === column.key
+                      ? (sortDirection === 'asc' ? 'ascending' : 'descending')
+                      : undefined
+                  }
+                >
                   {column.sortable ? (
                     <button
                       onClick={() => handleSort(column.key)}
-                      className="flex items-center gap-2 hover:text-foreground transition-colors"
+                      className="flex items-center gap-2 hover:text-foreground transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded px-1 -mx-1"
+                      aria-label={`Sort by ${column.header}${sortColumn === column.key ? (sortDirection === 'asc' ? ', currently ascending' : ', currently descending') : ''}`}
+                      disabled={loading}
                     >
                       {column.header}
-                      {sortColumn === column.key && (
-                        sortDirection === 'asc' ? (
-                          <ChevronUp className="h-4 w-4" />
-                        ) : (
-                          <ChevronDown className="h-4 w-4" />
-                        )
-                      )}
+                      <span className="w-4 h-4 inline-flex items-center justify-center" aria-hidden="true">
+                        {sortColumn === column.key && (
+                          sortDirection === 'asc' ? (
+                            <ChevronUp className="h-4 w-4" />
+                          ) : (
+                            <ChevronDown className="h-4 w-4" />
+                          )
+                        )}
+                      </span>
                     </button>
                   ) : (
                     column.header
@@ -258,19 +356,35 @@ export function DataTable<T extends { id: number | string }>({
               ))}
             </TableRow>
           </TableHeader>
-          <TableBody ref={tableBodyRef}>
-            {paginatedData.length > 0 ? (
+          <TableBody
+            ref={tableBodyRef}
+            id={tableId}
+            aria-busy={loading}
+            aria-live="polite"
+          >
+            {loading ? (
+              renderSkeletonRows()
+            ) : paginatedData.length > 0 ? (
               paginatedData.map((row, rowIndex) => (
                 <TableRow
-                  key={row.id}
+                  key={getRowKey(row)}
                   tabIndex={0}
-                  className={`outline-none focus:outline-none focus-visible:outline-none ${focusedRowIndex === rowIndex ? 'bg-muted/50' : ''}`}
+                  role="row"
+                  aria-rowindex={startIndex + rowIndex + 1}
+                  aria-selected={focusedRowIndex === rowIndex}
+                  className={`
+                    outline-none focus:outline-none focus-visible:outline-none
+                    ${focusedRowIndex === rowIndex ? 'bg-muted/50 ring-2 ring-inset ring-ring' : ''}
+                    ${onRowClick ? 'cursor-pointer' : ''}
+                  `}
                   onFocus={() => setFocusedRowIndex(rowIndex)}
+                  onClick={() => handleRowClick(row)}
                 >
                   {columns.map(column => (
                     <TableCell
                       key={String(column.key)}
                       data-column={String(column.key)}
+                      style={column.width ? { width: column.width } : undefined}
                     >
                       {column.render
                         ? column.render(row[column.key], row, focusedRowIndex === rowIndex)
@@ -281,8 +395,12 @@ export function DataTable<T extends { id: number | string }>({
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={columns.length} className="text-center py-8">
-                  <p className="text-muted-foreground">No results found</p>
+                <TableCell
+                  colSpan={columns.length}
+                  className="text-center py-8"
+                  role="cell"
+                >
+                  <p className="text-muted-foreground">{emptyMessage}</p>
                 </TableCell>
               </TableRow>
             )}
@@ -290,68 +408,101 @@ export function DataTable<T extends { id: number | string }>({
         </Table>
       </div>
 
+      {/* Pagination controls */}
       <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-        <div className="text-sm text-muted-foreground">
-          Showing {displayTotalCount === 0 ? 0 : startIndex + 1}-{endIndex} of {displayTotalCount} row(s)
+        <div
+          className="text-sm text-muted-foreground"
+          aria-live="polite"
+          aria-atomic="true"
+        >
+          {loading ? (
+            <Skeleton className="h-4 w-32" />
+          ) : (
+            `Showing ${displayTotalCount === 0 ? 0 : startIndex + 1}-${endIndex} of ${displayTotalCount} row(s)`
+          )}
         </div>
 
         <div className="flex flex-col sm:flex-row gap-4 items-center">
           <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">Rows per page:</span>
-            <Select value={String(pageSize)} onValueChange={handlePageSizeChange}>
-              <SelectTrigger className="w-20">
+            <label
+              htmlFor={`${tableId}-pagesize`}
+              className="text-sm text-muted-foreground"
+            >
+              Rows per page:
+            </label>
+            <Select
+              value={String(pageSize)}
+              onValueChange={handlePageSizeChange}
+              disabled={loading}
+            >
+              <SelectTrigger
+                className="w-20"
+                id={`${tableId}-pagesize`}
+                aria-label="Rows per page"
+              >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="10">10</SelectItem>
-                <SelectItem value="20">20</SelectItem>
+                <SelectItem value="25">25</SelectItem>
                 <SelectItem value="50">50</SelectItem>
                 <SelectItem value="100">100</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
-          <div className="flex gap-2">
+          <nav
+            className="flex gap-2"
+            role="navigation"
+            aria-label="Table pagination"
+          >
             <Button
               variant="outline"
               size="sm"
               onClick={handleFirstPage}
-              disabled={currentPage === 1}
-              title="Go to first page"
+              disabled={loading || currentPage === 1}
+              aria-label="Go to first page"
             >
-              <ChevronsLeft className="h-4 w-4" />
+              <ChevronsLeft className="h-4 w-4" aria-hidden="true" />
             </Button>
             <Button
               variant="outline"
               size="sm"
               onClick={handlePreviousPage}
-              disabled={currentPage === 1}
-              title="Go to previous page"
+              disabled={loading || currentPage === 1}
+              aria-label="Go to previous page"
             >
-              <ChevronLeft className="h-4 w-4" />
+              <ChevronLeft className="h-4 w-4" aria-hidden="true" />
             </Button>
             <Button
               variant="outline"
               size="sm"
               onClick={handleNextPage}
-              disabled={currentPage === totalPages}
-              title="Go to next page"
+              disabled={loading || currentPage === totalPages || totalPages === 0}
+              aria-label="Go to next page"
             >
-              <ChevronRight className="h-4 w-4" />
+              <ChevronRight className="h-4 w-4" aria-hidden="true" />
             </Button>
             <Button
               variant="outline"
               size="sm"
               onClick={handleLastPage}
-              disabled={currentPage === totalPages}
-              title="Go to last page"
+              disabled={loading || currentPage === totalPages || totalPages === 0}
+              aria-label="Go to last page"
             >
-              <ChevronsRight className="h-4 w-4" />
+              <ChevronsRight className="h-4 w-4" aria-hidden="true" />
             </Button>
-          </div>
+          </nav>
 
-          <div className="text-sm text-muted-foreground">
-            Page {totalPages === 0 ? 0 : currentPage} of {totalPages}
+          <div
+            className="text-sm text-muted-foreground"
+            aria-live="polite"
+          >
+            {loading ? (
+              <Skeleton className="h-4 w-24" />
+            ) : (
+              `Page ${totalPages === 0 ? 0 : currentPage} of ${totalPages}`
+            )}
           </div>
         </div>
       </div>

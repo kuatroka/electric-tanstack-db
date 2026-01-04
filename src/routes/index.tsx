@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ActivityBarChart } from "@/components/charts";
 import { LatencyBadge, type DataFlow } from "@/components/LatencyBadge";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { useContentReady } from "@/hooks/useContentReady";
 import { useEffect, useState } from "react";
 
@@ -113,7 +114,7 @@ function HomePage() {
         <CardContent>
           {loading ? (
             <div className="h-[400px] flex items-center justify-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+              <LoadingSpinner size="lg" text="Loading market activity..." />
             </div>
           ) : (
             <ActivityBarChart data={activityData} height={400} />

@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { DataTable, type ColumnDef } from "@/components/DataTable";
 import { LatencyBadge, type DataFlow } from "@/components/LatencyBadge";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { useContentReady } from "@/hooks/useContentReady";
 import { useEffect, useState, useMemo } from "react";
 import { useSearch as useElectricSearch } from "@/hooks/useSearch";
@@ -151,7 +152,7 @@ function SuperinvestorsPage() {
         <CardContent>
           {loading ? (
             <div className="h-[400px] flex items-center justify-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+              <LoadingSpinner size="lg" text="Loading superinvestors..." />
             </div>
           ) : (
             <DataTable
