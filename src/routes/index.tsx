@@ -1,6 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ActivityBarChart } from "@/components/charts";
+import { LatencyBadge, type DataFlow } from "@/components/LatencyBadge";
+import { useContentReady } from "@/hooks/useContentReady";
 import { useEffect, useState } from "react";
 
 interface ActivityData {
@@ -26,9 +28,13 @@ function HomePage() {
   const [activityData, setActivityData] = useState<ActivityData[]>([]);
   const [freshness, setFreshness] = useState<DataFreshness | null>(null);
   const [loading, setLoading] = useState(true);
+  const [latencyMs, setLatencyMs] = useState<number>();
+  const [dataFlow, setDataFlow] = useState<DataFlow>("rq-api");
+  const { onReady } = useContentReady();
 
   useEffect(() => {
     async function fetchData() {
+      const startTime = performance.now();
       try {
         const [activityRes, freshnessRes] = await Promise.all([
           fetch("/api/all-assets-activity"),
@@ -38,34 +44,43 @@ function HomePage() {
         const freshnessJson = await freshnessRes.json();
         setActivityData(activityJson.activity);
         setFreshness(freshnessJson);
+        setDataFlow("rq-api");
       } catch (error) {
         console.error("Failed to fetch data:", error);
       } finally {
+        const endTime = performance.now();
+        setLatencyMs(Math.round((endTime - startTime) * 100) / 100);
         setLoading(false);
+        onReady();
       }
     }
     fetchData();
-  }, []);
+  }, [onReady]);
 
   return (
-    <div className="container mx-auto p-6 space-y-8">
+    <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Fintellectus</h1>
+          <h1 className="text-3xl font-bold">Welcome to fintellectus</h1>
           <p className="text-muted-foreground">
-            Superinvestor Portfolio Analytics
+            Your gateway to superinvestor insights and asset analysis
           </p>
         </div>
-        {freshness && (
-          <div className="text-sm text-muted-foreground">
-            Data as of: {freshness.lastDataLoadDate}
-          </div>
-        )}
+        <div className="flex items-center gap-4">
+          {latencyMs !== undefined && (
+            <LatencyBadge latencyMs={latencyMs} source={dataFlow} />
+          )}
+          {freshness && (
+            <div className="text-sm text-muted-foreground">
+              Data as of: {freshness.lastDataLoadDate}
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Link to="/assets" className="block">
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
             <CardHeader>
               <CardTitle>Assets</CardTitle>
             </CardHeader>
@@ -78,7 +93,7 @@ function HomePage() {
         </Link>
 
         <Link to="/superinvestors" className="block">
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
             <CardHeader>
               <CardTitle>Superinvestors</CardTitle>
             </CardHeader>

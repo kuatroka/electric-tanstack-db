@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { shapes } from "../lib/electric";
+import type { DataFlow } from "@/components/LatencyBadge";
 
 export type SearchResult = {
   id: number;
@@ -13,17 +14,22 @@ export interface UseSearchResult {
   results: SearchResult[];
   isLoading: boolean;
   error?: string;
+  latencyMs?: number;
+  dataFlow: DataFlow;
 }
 
 /**
  * Hook for instant, offline-capable search using Electric pglite
  * Minimum 2 characters required before returning results
  * Returns first 10 matches, filtered by code/name (case-insensitive substring)
+ * Now includes latency tracking for LatencyBadge integration
  */
 export function useSearch(query: string): UseSearchResult {
   const [results, setResults] = useState<SearchResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>();
+  const [latencyMs, setLatencyMs] = useState<number>();
+  const [dataFlow, setDataFlow] = useState<DataFlow>("electric-indexeddb");
   const dataRef = useRef<SearchResult[]>([]);
 
   // Initialize shape and subscribe to data changes
@@ -48,10 +54,12 @@ export function useSearch(query: string): UseSearchResult {
       setResults([]);
       setError(undefined);
       setIsLoading(false);
+      setLatencyMs(undefined);
       return;
     }
 
     setIsLoading(true);
+    const startTime = performance.now();
 
     // Execute search immediately (pglite is instant)
     try {
@@ -61,6 +69,8 @@ export function useSearch(query: string): UseSearchResult {
         setResults([]);
         setError(undefined);
         setIsLoading(false);
+        setLatencyMs(0);
+        setDataFlow("electric-memory");
         return;
       }
 
@@ -78,16 +88,20 @@ export function useSearch(query: string): UseSearchResult {
         })
         .slice(0, 10); // Limit to first 10 results
 
+      const endTime = performance.now();
+      setLatencyMs(Math.round((endTime - startTime) * 100) / 100);
+      setDataFlow("electric-indexeddb");
       setResults(filtered);
       setError(undefined);
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : "Search failed";
       setError(errorMsg);
       setResults([]);
+      setLatencyMs(undefined);
     } finally {
       setIsLoading(false);
     }
   }, [query]);
 
-  return { results, isLoading, error };
+  return { results, isLoading, error, latencyMs, dataFlow };
 }

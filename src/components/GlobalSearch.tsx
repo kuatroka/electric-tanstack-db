@@ -1,13 +1,16 @@
 import { useState, useRef } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useSearch, type SearchResult } from "../hooks/useSearch";
+import { LatencyBadge } from "@/components/LatencyBadge";
+import { Input } from "@/components/ui/input";
 
 export function GlobalSearch() {
   const navigate = useNavigate();
   const [input, setInput] = useState("");
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
-  const { results } = useSearch(input);
+  const { results, latencyMs, dataFlow, isLoading } = useSearch(input);
+  const shouldSearch = input.length >= 2;
 
   const handleResultClick = (result: SearchResult) => {
     // Navigate based on category
@@ -56,124 +59,78 @@ export function GlobalSearch() {
   };
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        right: 0,
-        zIndex: 1000,
-        backgroundColor: "white",
-        borderBottom: "1px solid #ddd",
-        padding: "1rem",
-        boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
-      }}
-    >
-      <div
-        style={{
-          maxWidth: "800px",
-          margin: "0 auto",
-          position: "relative",
-        }}
-      >
-        <input
+    <div className="relative w-full sm:w-auto">
+      <div className="relative">
+        <Input
           ref={inputRef}
-          type="text"
+          type="search"
           value={input}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
           placeholder="Search (min 2 characters)..."
-          style={{
-            width: "100%",
-            padding: "0.75rem",
-            fontSize: "1rem",
-            border: "1px solid #ddd",
-            borderRadius: "4px",
-            boxSizing: "border-box",
-          }}
+          className="w-full sm:w-[30rem] pr-24"
         />
-
-        {/* Dropdown Results */}
-        {input.length >= 2 && (
-          <div
-            style={{
-              position: "absolute",
-              top: "100%",
-              left: 0,
-              right: 0,
-              backgroundColor: "white",
-              border: "1px solid #ddd",
-              borderTop: "none",
-              borderRadius: "0 0 4px 4px",
-              maxHeight: "300px",
-              overflowY: "auto",
-              marginTop: "0",
-              zIndex: 1001,
-            }}
-          >
-            {results.length === 0 ? (
-              <div
-                style={{
-                  padding: "1rem",
-                  color: "#999",
-                  textAlign: "center",
-                }}
-              >
-                No results found
-              </div>
-            ) : (
-              <ul style={{ margin: 0, padding: 0, listStyle: "none" }}>
-                {results.map((result, index) => (
-                  <li
-                    key={`${result.category}-${result.code}-${result.cusip || ""}`}
-                    onClick={() => handleResultClick(result)}
-                    style={{
-                      padding: "0.75rem 1rem",
-                      cursor: "pointer",
-                      backgroundColor:
-                        index === highlightedIndex ? "#f0f0f0" : "white",
-                      borderBottom: "1px solid #eee",
-                      transition: "background-color 0.2s",
-                    }}
-                    onMouseEnter={() => setHighlightedIndex(index)}
-                  >
-                    <div
-                      style={{
-                        fontWeight: "500",
-                        fontSize: "0.95rem",
-                      }}
-                    >
-                      {result.code}
-                    </div>
-                    {result.name && (
-                      <div
-                        style={{
-                          fontSize: "0.85rem",
-                          color: "#666",
-                          marginTop: "0.25rem",
-                        }}
-                      >
-                        {result.name}
-                      </div>
-                    )}
-                    <div
-                      style={{
-                        fontSize: "0.75rem",
-                        color: "#999",
-                        marginTop: "0.25rem",
-                      }}
-                    >
-                      {result.category === "assets"
-                        ? `Asset • CUSIP: ${result.cusip}`
-                        : `Superinvestor`}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
+        {latencyMs !== undefined && shouldSearch && !isLoading && (
+          <div className="absolute right-2 top-1/2 -translate-y-1/2">
+            <LatencyBadge
+              latencyMs={latencyMs}
+              source={dataFlow}
+            />
           </div>
         )}
+        {isLoading && shouldSearch && (
+          <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">
+            ...
+          </span>
+        )}
       </div>
+
+      {/* Dropdown Results */}
+      {input.length >= 2 && (
+        <div className="absolute z-50 mt-1 w-full sm:w-[30rem] max-h-[400px] overflow-y-auto rounded-md border border-border bg-popover shadow-lg">
+          {results.length === 0 ? (
+            <div className="p-4 text-center text-muted-foreground">
+              No results found
+            </div>
+          ) : (
+            results.map((result, index) => (
+              <button
+                key={`${result.category}-${result.code}-${result.cusip || ""}`}
+                type="button"
+                className={`flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-muted ${
+                  index === highlightedIndex ? "bg-muted" : ""
+                }`}
+                onClick={() => handleResultClick(result)}
+                onMouseEnter={() => setHighlightedIndex(index)}
+              >
+                <div className="flex flex-col truncate mr-2">
+                  {result.category === "assets" ? (
+                    <>
+                      <span className="truncate">
+                        <span className="font-bold">{result.code}</span>
+                        {result.name && <span> - {result.name}</span>}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {result.cusip || ""}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="truncate">{result.name || result.code}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {result.code}
+                      </span>
+                    </>
+                  )}
+                </div>
+                <span className="ml-auto text-xs uppercase text-muted-foreground">
+                  {result.category}
+                </span>
+              </button>
+            ))
+          )}
+        </div>
+      )}
     </div>
   );
 }

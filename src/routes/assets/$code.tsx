@@ -2,6 +2,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ActivityBarChart } from "@/components/charts";
+import { LatencyBadge, type DataFlow } from "@/components/LatencyBadge";
+import { useContentReady } from "@/hooks/useContentReady";
 import { useEffect, useState } from "react";
 
 interface Asset {
@@ -29,9 +31,13 @@ function AssetDetailPage() {
   const [asset, setAsset] = useState<Asset | null>(null);
   const [activity, setActivity] = useState<ActivityData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [latencyMs, setLatencyMs] = useState<number>();
+  const [dataFlow, setDataFlow] = useState<DataFlow>("rq-api");
+  const { onReady } = useContentReady();
 
   useEffect(() => {
     async function fetchData() {
+      const startTime = performance.now();
       setLoading(true);
       try {
         const [assetRes, activityRes] = await Promise.all([
@@ -42,27 +48,29 @@ function AssetDetailPage() {
         const activityJson = await activityRes.json();
         setAsset(assetJson.asset);
         setActivity(activityJson.activity);
+        setDataFlow("rq-api");
       } catch (error) {
         console.error("Failed to fetch asset data:", error);
       } finally {
+        const endTime = performance.now();
+        setLatencyMs(Math.round((endTime - startTime) * 100) / 100);
         setLoading(false);
+        onReady();
       }
     }
     fetchData();
-  }, [code]);
+  }, [code, onReady]);
 
   if (loading) {
     return (
-      <div className="container mx-auto p-6">
-        <div className="h-[400px] flex items-center justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-        </div>
+      <div className="h-[400px] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="space-y-6">
       <div className="flex items-center gap-4">
         <Link
           to="/assets"
@@ -87,11 +95,19 @@ function AssetDetailPage() {
             </p>
           )}
         </div>
+        {latencyMs !== undefined && (
+          <LatencyBadge latencyMs={latencyMs} source={dataFlow} />
+        )}
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Superinvestor Activity</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle>Superinvestor Activity</CardTitle>
+            {latencyMs !== undefined && (
+              <LatencyBadge latencyMs={latencyMs} source={dataFlow} />
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           {activity.length > 0 ? (
