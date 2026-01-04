@@ -24,15 +24,25 @@ export function useSearch(query: string): UseSearchResult {
   const [results, setResults] = useState<SearchResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>();
-  const shapeRef = useRef<ReturnType<typeof shapes.searches> | null>(null);
-  const subscribedRef = useRef(false);
+  const dataRef = useRef<SearchResult[]>([]);
 
+  // Initialize shape and subscribe to data changes
   useEffect(() => {
-    // Initialize shape on first interaction (lazy loading)
-    if (!shapeRef.current) {
-      shapeRef.current = shapes.searches();
-    }
+    const shape = shapes.searches();
 
+    // Subscribe to get data updates from Electric
+    const unsubscribe = shape.subscribe(({ rows }) => {
+      // Store the rows in ref for use by search effect
+      dataRef.current = (rows || []) as SearchResult[];
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, []);
+
+  // Execute search when query changes
+  useEffect(() => {
     // Reset if query is too short
     if (query.length < 2) {
       setResults([]);
@@ -41,50 +51,42 @@ export function useSearch(query: string): UseSearchResult {
       return;
     }
 
-    // Subscribe to shape on first search
-    if (!subscribedRef.current && shapeRef.current) {
-      subscribedRef.current = true;
-      shapeRef.current.subscribe(() => {
-        // Trigger search after subscription
-      });
-    }
-
     setIsLoading(true);
 
-    // Execute search with pglite query (instant, no network)
-    const executeSearch = async () => {
-      try {
-        if (!shapeRef.current) {
-          throw new Error("Search shape not initialized");
-        }
+    // Execute search immediately (pglite is instant)
+    try {
+      const allRows = dataRef.current;
 
-        // Get rows from shape (pglite data)
-        const allRows = shapeRef.current.rows as SearchResult[];
-
-        // Filter by code/name fields (case-insensitive substring match)
-        const queryLower = query.toLowerCase();
-        const filtered = (allRows || [])
-          .filter((item) => {
-            const codeLower = item.code.toLowerCase();
-            const nameLower = (item.name || "").toLowerCase();
-            return (
-              codeLower.includes(queryLower) ||
-              nameLower.includes(queryLower)
-            );
-          })
-          .slice(0, 10); // Limit to first 10 results
-
-        setResults(filtered);
-        setError(undefined);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Search failed");
+      if (!Array.isArray(allRows) || allRows.length === 0) {
         setResults([]);
-      } finally {
+        setError(undefined);
         setIsLoading(false);
+        return;
       }
-    };
 
-    executeSearch();
+      // Filter by code/name fields (case-insensitive substring match)
+      const queryLower = query.toLowerCase();
+      const filtered = allRows
+        .filter((item) => {
+          if (!item) return false;
+          const codeLower = (item.code || "").toLowerCase();
+          const nameLower = (item.name || "").toLowerCase();
+          return (
+            codeLower.includes(queryLower) ||
+            nameLower.includes(queryLower)
+          );
+        })
+        .slice(0, 10); // Limit to first 10 results
+
+      setResults(filtered);
+      setError(undefined);
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : "Search failed";
+      setError(errorMsg);
+      setResults([]);
+    } finally {
+      setIsLoading(false);
+    }
   }, [query]);
 
   return { results, isLoading, error };
