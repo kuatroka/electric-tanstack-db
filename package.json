@@ -21,6 +21,7 @@
     "@tanstack/db-collections": "^0.0.7",
     "@tanstack/react-router": "^1.93.0",
     "drizzle-orm": "^0.38.3",
+    "hono": "^4.11.3",
     "postgres": "^3.4.5",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
