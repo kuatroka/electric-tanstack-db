@@ -3,12 +3,13 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "vinxi dev --port 5174",
+    "dev": "vite --port 5174",
+    "dev:api": "bun run src/server/index.ts",
     "dev:electric": "docker compose -f docker/docker-compose.yml up",
     "dev:caddy": "caddy run --config Caddyfile",
-    "dev:all": "concurrently -n electric,app,caddy -c blue,green,yellow \"bun run dev:electric\" \"bun run dev\" \"bun run dev:caddy\"",
-    "build": "vinxi build",
-    "start": "vinxi start",
+    "dev:all": "concurrently -n electric,api,app,caddy -c blue,magenta,green,yellow \"bun run dev:electric\" \"bun run dev:api\" \"bun run dev\" \"bun run dev:caddy\"",
+    "build": "vite build",
+    "preview": "vite preview",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
@@ -19,20 +20,21 @@
     "@tanstack/db": "^0.0.7",
     "@tanstack/db-collections": "^0.0.7",
     "@tanstack/react-router": "^1.93.0",
-    "@tanstack/start": "^1.93.0",
     "drizzle-orm": "^0.38.3",
     "postgres": "^3.4.5",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "vinxi": "^0.5.1"
+    "react-router-dom": "^7.11.0"
   },
   "devDependencies": {
+    "@types/bun": "^1.3.5",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.3.4",
     "concurrently": "^9.1.2",
     "drizzle-kit": "^0.30.1",
     "typescript": "^5.7.2",
-    "vite": "^6.0.7",
+    "vite": "^7.3.0",
     "vite-tsconfig-paths": "^5.1.4"
   }
 }

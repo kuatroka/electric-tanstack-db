@@ -8,7 +8,8 @@ export interface ShapeConfig {
   columns?: string[];
 }
 
-export function createShapeStream<T>(config: ShapeConfig): ShapeStream<T> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function createShapeStream<T extends Record<string, any>>(config: ShapeConfig): ShapeStream<T> {
   const url = new URL(`/v1/shape`, ELECTRIC_URL);
   url.searchParams.set("table", config.table);
 
@@ -25,9 +26,19 @@ export function createShapeStream<T>(config: ShapeConfig): ShapeStream<T> {
   });
 }
 
-export function createShape<T>(config: ShapeConfig): Shape<T> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function createShape<T extends Record<string, any>>(config: ShapeConfig): Shape<T> {
   const stream = createShapeStream<T>(config);
   return new Shape<T>(stream);
+}
+
+// Search result type from searches table
+export interface SearchResult {
+  id: number;
+  code: string;
+  name: string | null;
+  category: string;
+  cusip: string | null;
 }
 
 // Pre-configured shapes for common use cases
@@ -54,5 +65,11 @@ export const shapes = {
     }>({
       table: "todos",
       where: projectId ? `project_id = '${projectId}'` : undefined,
+    }),
+
+  // Searches shape - syncs entire searches table for instant offline-capable search
+  searches: () =>
+    createShape<SearchResult>({
+      table: "searches",
     }),
 };
