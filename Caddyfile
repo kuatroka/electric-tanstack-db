@@ -1,0 +1,13 @@
+localhost:5173 {
+	# Enable HTTP/2 for optimal Electric sync performance
+	reverse_proxy localhost:5174
+
+	# Enable compression
+	encode gzip
+
+	# Log access
+	log {
+		output stdout
+		format console
+	}
+}

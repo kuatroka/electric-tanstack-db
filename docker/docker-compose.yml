@@ -1,0 +1,17 @@
+services:
+  electric:
+    image: electricsql/electric:latest
+    container_name: electric-tanstack-db
+    environment:
+      DATABASE_URL: "postgresql://user:password@host.docker.internal:5432/postgres"
+    ports:
+      - "30000:3000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/v1/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
