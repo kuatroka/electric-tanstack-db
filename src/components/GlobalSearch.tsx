@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useRef } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import { useSearch, type SearchResult } from "../hooks/useSearch";
 
 export function GlobalSearch() {
@@ -11,12 +11,11 @@ export function GlobalSearch() {
 
   const handleResultClick = (result: SearchResult) => {
     // Navigate based on category
-    const route =
-      result.category === "asset"
-        ? `/category/${result.code}/${result.cusip}`
-        : `/category/${result.code}`;
-
-    navigate(route);
+    if (result.category === "assets") {
+      navigate({ to: "/assets/$code", params: { code: result.code } });
+    } else {
+      navigate({ to: "/superinvestors/$cik", params: { cik: result.code } });
+    }
 
     // Clear search
     setInput("");
@@ -164,7 +163,7 @@ export function GlobalSearch() {
                         marginTop: "0.25rem",
                       }}
                     >
-                      {result.category === "asset"
+                      {result.category === "assets"
                         ? `Asset • CUSIP: ${result.cusip}`
                         : `Superinvestor`}
                     </div>
