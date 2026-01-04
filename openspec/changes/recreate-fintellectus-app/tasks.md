@@ -3,25 +3,25 @@
 ## Phase 1: Database & Backend Foundation
 
 ### 1.1 Database Schema
-- [ ] Create Drizzle schema file with all tables (assets, superinvestors, searches, activity_summary, cik_quarterly, investor_flow, drilldown_activity)
-- [ ] Add proper indexes for query performance
-- [ ] Generate and run Drizzle migrations
-- [ ] Seed database with sample 13F data (at least 100 assets, 50 superinvestors, 8 quarters of activity)
-- [ ] Verify Electric sync is working for all tables
+- [x] Create Drizzle schema file with all tables (assets, superinvestors, searches, activity_summary, cik_quarterly, investor_flow, drilldown_activity)
+- [x] Add proper indexes for query performance
+- [x] Generate and run Drizzle migrations
+- [x] Seed database with sample 13F data (at least 100 assets, 50 superinvestors, 8 quarters of activity)
+- [x] Verify Electric sync is working for all tables
 
 ### 1.2 API Endpoints Structure
-- [ ] Refactor Hono server structure to support multiple route files
-- [ ] Create `/api/assets` endpoint (GET all assets with pagination)
-- [ ] Create `/api/superinvestors` endpoint (GET all superinvestors with pagination)
-- [ ] Create `/api/superinvestors/:cik` endpoint (GET single superinvestor)
-- [ ] Create `/api/all-assets-activity` endpoint (aggregated opened/closed by quarter, optional cusip/ticker filter)
-- [ ] Create `/api/investor-flow` endpoint (inflow/outflow per quarter for a ticker)
-- [ ] Create `/api/cik-quarterly/:cik` endpoint (portfolio value over time)
-- [ ] Create `/api/drilldown/:ticker` endpoint (investor activity drilldown)
-- [ ] Create `/api/duckdb-investor-drilldown` endpoint (detailed drilldown rows)
-- [ ] Create `/api/search` endpoint (global search across assets and superinvestors)
-- [ ] Create `/api/data-freshness` endpoint (last data load date)
-- [ ] Add query timing to all API responses
+- [x] Refactor Hono server structure to support multiple route files
+- [x] Create `/api/assets` endpoint (GET all assets with pagination)
+- [x] Create `/api/superinvestors` endpoint (GET all superinvestors with pagination)
+- [x] Create `/api/superinvestors/:cik` endpoint (GET single superinvestor)
+- [x] Create `/api/all-assets-activity` endpoint (aggregated opened/closed by quarter, optional cusip/ticker filter)
+- [x] Create `/api/investor-flow` endpoint (inflow/outflow per quarter for a ticker)
+- [x] Create `/api/cik-quarterly/:cik` endpoint (portfolio value over time)
+- [x] Create `/api/drilldown/:ticker` endpoint (investor activity drilldown)
+- [x] Create `/api/duckdb-investor-drilldown` endpoint (detailed drilldown rows)
+- [x] Create `/api/search` endpoint (global search across assets and superinvestors)
+- [x] Create `/api/data-freshness` endpoint (last data load date)
+- [x] Add query timing to all API responses
 
 ### 1.3 TanStack DB Collections
 - [ ] Create `assetsCollection` with Electric shape sync
@@ -36,16 +36,16 @@
 ## Phase 2: UI Components Foundation
 
 ### 2.1 Shadcn/ui Components Setup
-- [ ] Install and configure Tailwind CSS v4
-- [ ] Install shadcn/ui CLI and initialize
-- [ ] Add Button component with all variants
-- [ ] Add Card component (Header, Title, Description, Content, Footer)
-- [ ] Add Input component
-- [ ] Add Select component
-- [ ] Add Badge component with variants
-- [ ] Add Dialog component
-- [ ] Add Command component (for search)
-- [ ] Add Table components (Table, TableHeader, TableBody, TableRow, TableHead, TableCell)
+- [x] Install and configure Tailwind CSS v4
+- [x] Install shadcn/ui CLI and initialize
+- [x] Add Button component with all variants
+- [x] Add Card component (Header, Title, Description, Content, Footer)
+- [x] Add Input component
+- [x] Add Select component
+- [x] Add Badge component with variants
+- [x] Add Dialog component
+- [x] Add Command component (for search)
+- [x] Add Table components (Table, TableHeader, TableBody, TableRow, TableHead, TableCell)
 
 ### 2.2 Core Layout Components
 - [ ] Create `SiteLayout` component with header and main content area
@@ -85,11 +85,11 @@
 ## Phase 3: Chart Components
 
 ### 3.1 Chart Libraries Setup
-- [ ] Install uPlot and create React wrapper component
-- [ ] Install ECharts and echarts-for-react
-- [ ] Install Recharts
-- [ ] Create chart theme configuration matching app design
-- [ ] Set up chart color palette (green for opened/inflow, red for closed/outflow)
+- [x] Install uPlot and create React wrapper component
+- [x] Install ECharts and echarts-for-react
+- [x] Install Recharts
+- [x] Create chart theme configuration matching app design
+- [x] Set up chart color palette (green for opened/inflow, red for closed/outflow)
 
 ### 3.2 uPlot Chart Factory
 - [ ] Create `createBarChart` factory function
@@ -140,11 +140,11 @@
 ## Phase 4: Page Implementation
 
 ### 4.1 Routing Setup
-- [ ] Configure TanStack Router with file-based routing
-- [ ] Create route tree structure matching reference app
-- [ ] Set up layout route with SiteLayout
-- [ ] Add route params typing for :code/:cusip and :cik
-- [ ] Implement 404 not found page
+- [x] Configure TanStack Router with file-based routing
+- [x] Create route tree structure matching reference app
+- [x] Set up layout route with SiteLayout
+- [x] Add route params typing for :code/:cusip and :cik
+- [x] Implement 404 not found page
 
 ### 4.2 Home Page (`/`)
 - [ ] Create `HomePage` component
